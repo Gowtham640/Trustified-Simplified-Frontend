@@ -21,6 +21,7 @@ export default function RootLayout({
   return (
     <html lang="en">
       <head>
+        <meta name="google-site-verification" content="h7G_P0LjYfJbTdab0lcaBbHZXssCIetEaOb8YY0kWM4" />
         <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@20..48,100..700,0..1,-50..200&display=optional&icon_names=lab_research,microbiology,rate_review" />
         <link rel="icon" href="/favicon.ico" sizes="any" />
         <link rel="icon" href="/favicon.svg" type="image/svg+xml" />

@@ -1,0 +1,14 @@
+User-agent: *
+Allow: /
+
+# Block access to admin areas if any
+Disallow: /admin/
+Disallow: /api/private/
+
+# Allow crawling of all content
+Allow: /category/
+Allow: /product/
+Allow: /search
+
+# Sitemap
+Sitemap: https://trustified-simplified.vercel.app/sitemap.xml

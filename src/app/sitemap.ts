@@ -2,24 +2,18 @@ import { MetadataRoute } from 'next'
 import { supabase } from '@/lib/supabase'
 
 export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
-  // For Vercel deployment, use the deployment URL
-  // For local development, you can set NEXT_PUBLIC_BASE_URL in .env.local
-  const baseUrl = process.env.NEXT_PUBLIC_BASE_URL ||
-                  (process.env.VERCEL_URL ? `https://${process.env.VERCEL_URL}` : 'https://trustified-simplified.vercel.app')
+  // Use production domain - Google rejects preview URLs
+  const baseUrl = 'https://trustified-simplified-frontend.vercel.app'
 
-  // Static pages
+  // Static pages - simplified metadata as Google doesn't use priority/changefreq
   const staticPages: MetadataRoute.Sitemap = [
     {
       url: baseUrl,
       lastModified: new Date(),
-      changeFrequency: 'daily',
-      priority: 1,
     },
     {
       url: `${baseUrl}/search`,
       lastModified: new Date(),
-      changeFrequency: 'weekly',
-      priority: 0.8,
     },
   ]
 
@@ -53,12 +47,10 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     const categoryPages: MetadataRoute.Sitemap = []
 
     typedProducts.forEach((product) => {
-      // Add product page
+      // Add product page - only include lastModified as Google doesn't use other fields
       productPages.push({
         url: `${baseUrl}/product/${product.product_id}`,
         lastModified: new Date(product.updated_at),
-        changeFrequency: 'monthly',
-        priority: 0.6,
       })
 
       // Collect category
@@ -67,13 +59,11 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
       }
     })
 
-    // Add category pages
+    // Add category pages - simplified metadata
     categories.forEach((category) => {
       categoryPages.push({
         url: `${baseUrl}/category/${category.toLowerCase().replace(/\s+/g, '-')}`,
         lastModified: new Date(),
-        changeFrequency: 'weekly',
-        priority: 0.8,
       })
     })
 

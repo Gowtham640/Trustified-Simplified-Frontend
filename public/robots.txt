@@ -11,4 +11,4 @@ Allow: /product/
 Allow: /search
 
 # Sitemap
-Sitemap: https://trustified-simplified.vercel.app/sitemap.xml
+Sitemap: https://trustified-simplified-frontend.vercel.app/sitemap.xml

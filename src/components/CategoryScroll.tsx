@@ -13,52 +13,87 @@ export default function CategoryScroll({ title, products }: CategoryScrollProps)
   const scrollRef = useRef<HTMLDivElement>(null);
   const [isHovered, setIsHovered] = useState(false);
   const [canScrollLeft, setCanScrollLeft] = useState(false);
-  const [canScrollRight, setCanScrollRight] = useState(true);
+  const [canScrollRight, setCanScrollRight] = useState(false);
+  const [isScrolling, setIsScrolling] = useState(false);
+
+  const updateScrollButtons = () => {
+    if (scrollRef.current) {
+      const { scrollLeft, scrollWidth, clientWidth } = scrollRef.current;
+      const tolerance = 5; // 5px tolerance for floating point precision
+
+      setCanScrollLeft(scrollLeft > tolerance);
+      setCanScrollRight(scrollLeft < scrollWidth - clientWidth - tolerance);
+    }
+  };
 
   useEffect(() => {
     updateScrollButtons();
   }, [products.length]);
 
+  // Update scroll buttons when user manually scrolls
   useEffect(() => {
     const scrollContainer = scrollRef.current;
-    if (!scrollContainer || isHovered || products.length === 0) return;
+    if (!scrollContainer) return;
 
-    let scrollInterval: NodeJS.Timeout;
-
-    const startAutoScroll = () => {
-      scrollInterval = setInterval(() => {
-        if (scrollContainer.scrollLeft >= scrollContainer.scrollWidth - scrollContainer.clientWidth - 1) {
-          scrollContainer.scrollLeft = 0;
-        } else {
-          scrollContainer.scrollBy({ left: 1, behavior: 'auto' });
-        }
-      }, 30);
+    const handleScroll = () => {
+      if (!isScrolling) {
+        updateScrollButtons();
+      }
     };
 
-    startAutoScroll();
+    scrollContainer.addEventListener('scroll', handleScroll, { passive: true });
+    return () => scrollContainer.removeEventListener('scroll', handleScroll);
+  }, [isScrolling]);
+
+  useEffect(() => {
+    const scrollContainer = scrollRef.current;
+    if (!scrollContainer || isHovered || products.length === 0 || isScrolling) return;
+
+    let animationId: number;
+    let lastTime = 0;
+    const scrollSpeed = 0.5; // pixels per millisecond
+
+    const autoScroll = (currentTime: number) => {
+      if (currentTime - lastTime >= 16) { // ~60fps
+        lastTime = currentTime;
+
+        if (scrollContainer.scrollLeft >= scrollContainer.scrollWidth - scrollContainer.clientWidth - 10) {
+          // Smoothly scroll back to start instead of instant jump
+          scrollContainer.scrollTo({ left: 0, behavior: 'smooth' });
+        } else {
+          scrollContainer.scrollBy({ left: scrollSpeed, behavior: 'auto' });
+        }
+      }
+
+      if (!isHovered && !isScrolling) {
+        animationId = requestAnimationFrame(autoScroll);
+      }
+    };
+
+    animationId = requestAnimationFrame(autoScroll);
 
     return () => {
-      if (scrollInterval) clearInterval(scrollInterval);
+      if (animationId) {
+        cancelAnimationFrame(animationId);
+      }
     };
-  }, [isHovered, products.length]);
-
-  const updateScrollButtons = () => {
-    if (scrollRef.current) {
-      setCanScrollLeft(scrollRef.current.scrollLeft > 0);
-      setCanScrollRight(
-        scrollRef.current.scrollLeft < scrollRef.current.scrollWidth - scrollRef.current.clientWidth - 1
-      );
-    }
-  };
+  }, [isHovered, products.length, isScrolling]);
 
   const scroll = (direction: 'left' | 'right') => {
-    if (scrollRef.current) {
-      const scrollAmount = 300;
+    if (scrollRef.current && !isScrolling) {
+      setIsScrolling(true);
+      const scrollAmount = Math.min(300, scrollRef.current.clientWidth * 0.8); // Responsive scroll amount
+
       scrollRef.current.scrollBy({
         left: direction === 'left' ? -scrollAmount : scrollAmount,
         behavior: 'smooth'
       });
-      setTimeout(updateScrollButtons, 300);
+
+      // Wait for smooth scroll to complete before updating buttons
+      setTimeout(() => {
+        updateScrollButtons();
+        setIsScrolling(false);
+      }, 350); // Slightly longer than the smooth scroll duration
     }
   };
 
@@ -71,9 +106,9 @@ export default function CategoryScroll({ title, products }: CategoryScrollProps)
         <div className="flex space-x-2">
           <button
             onClick={() => scroll('left')}
-            disabled={!canScrollLeft}
+            disabled={!canScrollLeft || isScrolling}
             className={`p-2 rounded-full bg-emerald-100 hover:bg-emerald-200 transition-colors ${
-              !canScrollLeft ? 'opacity-50 cursor-not-allowed' : ''
+              !canScrollLeft || isScrolling ? 'opacity-50 cursor-not-allowed' : ''
             }`}
           >
             <svg className="w-6 h-6 text-emerald-800" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -82,9 +117,9 @@ export default function CategoryScroll({ title, products }: CategoryScrollProps)
           </button>
           <button
             onClick={() => scroll('right')}
-            disabled={!canScrollRight}
+            disabled={!canScrollRight || isScrolling}
             className={`p-2 rounded-full bg-emerald-100 hover:bg-emerald-200 transition-colors ${
-              !canScrollRight ? 'opacity-50 cursor-not-allowed' : ''
+              !canScrollRight || isScrolling ? 'opacity-50 cursor-not-allowed' : ''
             }`}
           >
             <svg className="w-6 h-6 text-emerald-800" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -98,7 +133,6 @@ export default function CategoryScroll({ title, products }: CategoryScrollProps)
         ref={scrollRef}
         onMouseEnter={() => setIsHovered(true)}
         onMouseLeave={() => setIsHovered(false)}
-        onScroll={updateScrollButtons}
         className="flex space-x-4 overflow-x-hidden scroll-smooth"
       >
         {products.map((product) => (

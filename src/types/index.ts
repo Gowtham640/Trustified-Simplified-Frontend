@@ -45,7 +45,7 @@ export interface ContaminantTests {
 export interface ContaminantGroup {
   note?: string;
   verdict?: string;
-  [key: string]: any;
+  [key: string]: unknown;
 }
 
 export interface Review {
@@ -189,7 +189,7 @@ export const getContaminantVerdict = (product: Report, contaminant: string): str
   for (const [key, value] of Object.entries(contaminantTests)) {
     if (typeof value === 'object' && value !== null && 'verdict' in value) {
       if (key.toLowerCase().includes(contaminant.toLowerCase())) {
-        return (value as any).verdict;
+        return (value as TestResult | ContaminantGroup).verdict || null;
       }
     }
   }
@@ -230,7 +230,8 @@ export const getContaminantTestsVerdict = (product: Report): string | null => {
 
   for (const value of Object.values(contaminantTests)) {
     if (typeof value === 'object' && value !== null && 'verdict' in value) {
-      verdicts.push((value as any).verdict);
+      const verdict = (value as TestResult | ContaminantGroup).verdict;
+      if (verdict) verdicts.push(verdict);
     }
   }
 

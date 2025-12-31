@@ -13,12 +13,6 @@ function SearchResults() {
   const [products, setProducts] = useState<Report[]>([]);
   const [loading, setLoading] = useState(true);
 
-  useEffect(() => {
-    if (query) {
-      searchProducts(query);
-    }
-  }, [query]);
-
   const searchProducts = async (searchQuery: string) => {
     setLoading(true);
 
@@ -64,6 +58,12 @@ function SearchResults() {
 
     setLoading(false);
   };
+
+  useEffect(() => {
+    if (query) {
+      searchProducts(query);
+    }
+  }, [query]);
 
   return (
     <div className="min-h-screen bg-gray-50">

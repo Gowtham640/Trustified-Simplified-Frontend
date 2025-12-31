@@ -14,7 +14,7 @@ export default function NotFound() {
           </div>
           <h1 className="text-4xl font-bold text-gray-900 mb-4">Product Not Found</h1>
           <p className="text-lg text-gray-600 mb-8">
-            The product you're looking for doesn't exist or has been removed.
+            The product you&apos;re looking for doesn&apos;t exist or has been removed.
           </p>
           <div className="flex flex-col sm:flex-row items-center justify-center gap-4">
             <Link

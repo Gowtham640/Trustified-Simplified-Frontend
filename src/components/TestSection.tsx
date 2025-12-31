@@ -1,6 +1,7 @@
 'use client';
 
 import { useState } from 'react';
+import { TestResult, ContaminantGroup } from '@/types';
 
 interface ExpandableNoteProps {
   note: string;
@@ -32,7 +33,7 @@ function ExpandableNote({ note, maxLength = 100 }: ExpandableNoteProps) {
 
 interface TestCardProps {
   testName: string;
-  testData: any;
+  testData: TestResult | ContaminantGroup;
   isNested?: boolean;
 }
 
@@ -40,11 +41,16 @@ function TestCard({ testName, testData, isNested = false }: TestCardProps) {
   const verdict = testData.verdict?.toLowerCase();
   const isPass = verdict === 'pass';
   const isFail = verdict === 'fail';
-  const isNeutral = !verdict || verdict === 'not assigned' || verdict === 'pending';
 
   const bgClass = isPass ? 'bg-emerald-100' : isFail ? 'bg-red-100' : 'bg-white';
   const borderClass = isPass ? 'border-emerald-300' : isFail ? 'border-red-300' : 'border-gray-300';
   const hoverClass = isNested ? '' : `hover:shadow-lg hover:-translate-y-1 ${isPass ? 'hover:bg-emerald-200 hover:border-emerald-400' : isFail ? 'hover:bg-red-200 hover:border-red-400' : 'hover:bg-gray-100 hover:border-gray-400'} transition-all duration-300`;
+
+  // Type-safe property access
+  const claimed = 'claimed' in testData ? String(testData.claimed) : undefined;
+  const tested = 'tested' in testData ? String(testData.tested) : undefined;
+  const rating = 'rating' in testData ? String(testData.rating) : undefined;
+  const note = 'note' in testData ? String(testData.note) : undefined;
 
   return (
     <div className={`rounded-lg p-3 border-2 min-h-[140px] ${bgClass} ${borderClass} shadow-sm ${hoverClass}`}>
@@ -64,30 +70,30 @@ function TestCard({ testName, testData, isNested = false }: TestCardProps) {
 
       {/* Test Values */}
       <div className="space-y-2 px-1">
-        {testData.claimed && (
+        {claimed && (
           <div className="flex justify-between items-center text-xs py-1">
             <span className="text-gray-600 font-medium px-1">Claimed</span>
-            <span className="font-semibold text-gray-900 px-1">{testData.claimed}</span>
+            <span className="font-semibold text-gray-900 px-1">{claimed}</span>
           </div>
         )}
-        {testData.tested && (
+        {tested && (
           <div className="flex justify-between items-center text-xs py-1">
             <span className="text-gray-600 font-medium px-1">Tested</span>
-            <span className="font-semibold text-gray-900 px-1">{testData.tested}</span>
+            <span className="font-semibold text-gray-900 px-1">{tested}</span>
           </div>
         )}
-        {testData.rating && (
+        {rating && (
           <div className="flex justify-between items-center text-xs py-1">
             <span className="text-gray-600 font-medium px-1">Rating</span>
-            <span className="font-semibold text-gray-900 px-1">{testData.rating}</span>
+            <span className="font-semibold text-gray-900 px-1">{rating}</span>
           </div>
         )}
       </div>
 
       {/* Note */}
-      {testData.note && (
+      {note && (
         <div className="mt-3 border-t border-gray-300 pt-2">
-          <ExpandableNote note={testData.note} />
+          <ExpandableNote note={note} />
         </div>
       )}
     </div>
@@ -96,7 +102,7 @@ function TestCard({ testName, testData, isNested = false }: TestCardProps) {
 
 interface TestGroupProps {
   groupName: string;
-  groupData: any;
+  groupData: ContaminantGroup;
 }
 
 function TestGroup({ groupName, groupData }: TestGroupProps) {
@@ -106,7 +112,7 @@ function TestGroup({ groupName, groupData }: TestGroupProps) {
   const borderClass = isPass ? 'border-green-400' : hasVerdict ? 'border-red-400' : 'border-gray-400';
 
   // Extract sub-tests
-  const subTests: Array<{ name: string; data: any }> = [];
+  const subTests: Array<{ name: string; data: unknown }> = [];
   Object.entries(groupData).forEach(([key, value]) => {
     if (key === 'verdict' || key === 'note') return;
     if (typeof value === 'object' && value !== null && !Array.isArray(value)) {
@@ -126,7 +132,7 @@ function TestGroup({ groupName, groupData }: TestGroupProps) {
         <h4 className="text-base font-bold text-gray-900 capitalize flex-1">
           {groupName.replace(/_/g, ' ')}
         </h4>
-        {hasVerdict && (
+        {hasVerdict && groupData.verdict && (
           <span className={`ml-2 px-3 py-1 rounded-full text-xs font-bold shrink-0 ${
             isPass ? 'bg-green-500 text-white' : 'bg-red-500 text-white'
           }`}>
@@ -146,7 +152,7 @@ function TestGroup({ groupName, groupData }: TestGroupProps) {
       {subTests.length > 0 && (
         <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
           {subTests.map(({ name, data }) => (
-            <TestCard key={name} testName={name} testData={data} isNested />
+            <TestCard key={name} testName={name} testData={data as TestResult | ContaminantGroup} isNested />
           ))}
         </div>
       )}
@@ -157,7 +163,7 @@ function TestGroup({ groupName, groupData }: TestGroupProps) {
 interface TestSectionProps {
   title: string;
   verdict: string;
-  tests: Record<string, any>;
+  tests: Record<string, unknown>;
 }
 
 export default function TestSection({ title, verdict, tests }: TestSectionProps) {
@@ -165,7 +171,6 @@ export default function TestSection({ title, verdict, tests }: TestSectionProps)
   const verdictLower = verdict?.toLowerCase();
   const isPass = verdictLower === 'pass';
   const isFail = verdictLower === 'fail';
-  const isNeutral = !verdictLower || verdictLower === 'not assigned' || verdictLower === 'pending';
   const sectionBgClass = isPass ? 'bg-emerald-50 border-emerald-200' : isFail ? 'bg-red-50 border-red-200' : 'bg-white border-gray-200';
   const noteBgClass = isPass ? 'bg-emerald-100 border-emerald-300' : isFail ? 'bg-red-100 border-red-300' : 'bg-white border-gray-300';
 
@@ -180,15 +185,16 @@ export default function TestSection({ title, verdict, tests }: TestSectionProps)
   const iconColor = isPass ? 'text-emerald-600' : 'text-red-600';
 
   // Organize tests into groups and individual tests
-  const items: Array<{ name: string; data: any; isGroup: boolean }> = [];
+  const items: Array<{ name: string; data: unknown; isGroup: boolean }> = [];
 
   Object.entries(tests).forEach(([key, value]) => {
     if (key === 'verdict' || key === 'note') return;
 
     if (typeof value === 'object' && value !== null && !Array.isArray(value)) {
       // Check if this has sub-tests (nested objects)
-      const hasSubTests = Object.keys(value).some(
-        k => k !== 'verdict' && k !== 'note' && typeof value[k] === 'object'
+      const valueRecord = value as Record<string, unknown>;
+      const hasSubTests = Object.keys(valueRecord).some(
+        k => k !== 'verdict' && k !== 'note' && typeof valueRecord[k] === 'object'
       );
 
       items.push({
@@ -217,10 +223,10 @@ export default function TestSection({ title, verdict, tests }: TestSectionProps)
         {items.map(({ name, data, isGroup }) => (
           isGroup ? (
             <div key={name} className="lg:col-span-2">
-              <TestGroup groupName={name} groupData={data} />
+              <TestGroup groupName={name} groupData={data as ContaminantGroup} />
             </div>
           ) : (
-            <TestCard key={name} testName={name} testData={data} />
+            <TestCard key={name} testName={name} testData={data as TestResult} />
           )
         ))}
       </div>

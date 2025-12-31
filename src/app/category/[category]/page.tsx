@@ -26,12 +26,7 @@ export default function CategoryPage() {
   const [products, setProducts] = useState<Report[]>([]);
   const [filteredProducts, setFilteredProducts] = useState<Report[]>([]);
   const [loading, setLoading] = useState(true);
-  const [currentFilters, setCurrentFilters] = useState<FilterOptions>({});
-  const [currentSort, setCurrentSort] = useState<SortOptions | undefined>();
-
-  useEffect(() => {
-    fetchProducts();
-  }, [category]);
+  const [mobileDropdownsOpen, setMobileDropdownsOpen] = useState<{ [key: string]: boolean }>({});
 
   const fetchProducts = async () => {
     setLoading(true);
@@ -86,9 +81,11 @@ export default function CategoryPage() {
     setLoading(false);
   };
 
+  useEffect(() => {
+    fetchProducts();
+  }, [category]);
+
   const handleFilterChange = (filters: FilterOptions, sort?: SortOptions) => {
-    setCurrentFilters(filters);
-    setCurrentSort(sort);
 
     let filtered = [...products];
 

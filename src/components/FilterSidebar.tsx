@@ -6,9 +6,16 @@ import { FilterOptions, SortOptions, getCategoryFilters, NUTRIENT_RANGES } from 
 interface FilterSidebarProps {
   onFilterChange: (filters: FilterOptions, sort?: SortOptions) => void;
   category: string;
+  mobileDropdownsOpen?: { [key: string]: boolean };
+  onMobileDropdownChange?: (dropdowns: { [key: string]: boolean }) => void;
 }
 
-export default function FilterSidebar({ onFilterChange, category }: FilterSidebarProps) {
+export default function FilterSidebar({
+  onFilterChange,
+  category,
+  mobileDropdownsOpen,
+  onMobileDropdownChange
+}: FilterSidebarProps) {
   const categoryConfig = getCategoryFilters(category);
 
   // Collapsible states
@@ -53,16 +60,55 @@ export default function FilterSidebar({ onFilterChange, category }: FilterSideba
   const [sortField, setSortField] = useState<string>('');
   const [sortDirection, setSortDirection] = useState<'asc' | 'desc'>('desc');
 
+  const clearFilters = () => {
+    setSelectedVerdicts([]);
+    setPriceRange([0, 10000]);
+    setPricePerServingRange([0, 1000]);
+    setSelectedProteinRanges([]);
+    setSelectedCarbsRanges([]);
+    setSelectedFatsRanges([]);
+    setSelectedCreatineRanges([]);
+
+    setAflatoxins([]);
+    setPesticides([]);
+    setAminoSpiking([]);
+    setHeavyMetals([]);
+    setMelamineSpiking([]);
+
+    setTaste([]);
+    setMixability([]);
+    setPackaging([]);
+    setServingSizeAccuracy([]);
+
+    setBasicTestsVerdict([]);
+    setContaminantTestsVerdict([]);
+    setReviewVerdict([]);
+
+    setSortField('');
+    setSortDirection('desc');
+
+    onFilterChange({});
+  };
+
   useEffect(() => {
     // Reset all filters when category changes
     clearFilters();
   }, [category]);
 
   const toggleSection = (section: string) => {
-    setExpandedSections(prev => ({
-      ...prev,
-      [section]: !prev[section]
-    }));
+    if (onMobileDropdownChange && mobileDropdownsOpen !== undefined) {
+      // Use external state for mobile dropdowns
+      onMobileDropdownChange({
+        ...mobileDropdownsOpen,
+        [section]: !mobileDropdownsOpen[section]
+      });
+    } else {
+      // Use local state for desktop collapsible sections
+      setExpandedSections(prev => ({
+        ...prev,
+        [section]: !prev[section]
+      }));
+    }
   };
 
   const applyFilters = (newFilters: Partial<FilterOptions> = {}, newSort?: SortOptions) => {
@@ -105,36 +151,6 @@ export default function FilterSidebar({ onFilterChange, category }: FilterSideba
     onFilterChange(filters, sort);
   };
 
-  const clearFilters = () => {
-    setSelectedVerdicts([]);
-    setPriceRange([0, 10000]);
-    setPricePerServingRange([0, 1000]);
-    setSelectedProteinRanges([]);
-    setSelectedCarbsRanges([]);
-    setSelectedFatsRanges([]);
-    setSelectedCreatineRanges([]);
-
-    setAflatoxins([]);
-    setPesticides([]);
-    setAminoSpiking([]);
-    setHeavyMetals([]);
-    setMelamineSpiking([]);
-
-    setTaste([]);
-    setMixability([]);
-    setPackaging([]);
-    setServingSizeAccuracy([]);
-
-    setBasicTestsVerdict([]);
-    setContaminantTestsVerdict([]);
-    setReviewVerdict([]);
-
-    setSortField('');
-    setSortDirection('desc');
-
-    onFilterChange({});
-  };
-
   const handleMultiSelectChange = (current: string[], value: string, setter: (value: string[]) => void, filterKey: keyof FilterOptions) => {
     const newValues = current.includes(value)
       ? current.filter(v => v !== value)
@@ -157,7 +173,7 @@ export default function FilterSidebar({ onFilterChange, category }: FilterSideba
     const newDirection = sortField === field && sortDirection === 'desc' ? 'asc' : 'desc';
     setSortField(field);
     setSortDirection(newDirection);
-    applyFilters({}, { field: field as any, direction: newDirection });
+    applyFilters({}, { field: field as SortOptions['field'], direction: newDirection });
   };
 
   const renderCollapsibleSection = (
@@ -311,8 +327,41 @@ export default function FilterSidebar({ onFilterChange, category }: FilterSideba
     return count;
   };
 
+  // Mobile dropdown component
+  const renderMobileDropdown = (
+    title: string,
+    sectionKey: string,
+    children: React.ReactNode
+  ) => (
+    <div>
+      <button
+        onClick={() => toggleSection(sectionKey)}
+        className="flex items-center justify-between w-full px-3 py-2 text-sm font-medium text-gray-700 bg-gray-50 border border-gray-300 rounded-md hover:bg-gray-100 focus:outline-none focus:ring-2 focus:ring-emerald-500"
+      >
+        <span>{title}</span>
+        <svg
+          className={`w-4 h-4 transition-transform ${expandedSections[sectionKey] ? 'rotate-180' : ''}`}
+          fill="none"
+          stroke="currentColor"
+          viewBox="0 0 24 24"
+        >
+          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+        </svg>
+      </button>
+      {(mobileDropdownsOpen ? mobileDropdownsOpen[sectionKey] : expandedSections[sectionKey]) && (
+        <div className="mt-1 bg-white border border-gray-300 rounded-md shadow-lg max-h-60 overflow-y-auto">
+          <div className="p-3">
+            {children}
+          </div>
+        </div>
+      )}
+    </div>
+  );
+
   return (
-    <div className="bg-white rounded-lg shadow-md p-6 sticky top-20">
+    <>
+      {/* Desktop Layout */}
+      <div className="hidden md:block bg-white rounded-lg shadow-md p-6 sticky top-20">
       <div className="flex items-center justify-between mb-6">
         <h3 className="text-lg font-bold text-gray-900">Filters</h3>
         <button
@@ -346,7 +395,7 @@ export default function FilterSidebar({ onFilterChange, category }: FilterSideba
               {sortField === field && (
                 <span className="float-right">
                   {sortDirection === 'desc' ? '↓' : '↑'}
-                </span>
+              </span>
               )}
             </button>
           ))}
@@ -428,7 +477,7 @@ export default function FilterSidebar({ onFilterChange, category }: FilterSideba
             0.1,
             'price_per_serving'
           )}
-        </div>
+      </div>
       )}
 
       {/* Contaminant Filters */}
@@ -460,7 +509,7 @@ export default function FilterSidebar({ onFilterChange, category }: FilterSideba
                   state.setter,
                   contaminant as keyof FilterOptions
                 )}
-              </div>
+          </div>
             );
           })}
         </div>
@@ -490,7 +539,7 @@ export default function FilterSidebar({ onFilterChange, category }: FilterSideba
               )}
             </div>
           ))}
-        </div>
+          </div>
       )}
 
       {/* Food Category Filters */}
@@ -531,6 +580,229 @@ export default function FilterSidebar({ onFilterChange, category }: FilterSideba
         </div>
       )}
     </div>
+
+    {/* Mobile Layout */}
+    <div className="md:hidden bg-white border-t border-gray-200 px-4 py-3 sticky top-0 z-40">
+      <div className="flex items-center justify-between mb-3">
+        <h3 className="text-sm font-bold text-gray-900">Filters & Sort</h3>
+        <button
+          onClick={clearFilters}
+          className="text-xs text-emerald-600 hover:text-emerald-800 font-medium"
+        >
+          Clear All
+        </button>
+      </div>
+
+      <div
+        className="flex gap-2 overflow-x-auto pb-2 [&::-webkit-scrollbar]:hidden"
+      >
+        {/* Sorting Dropdown */}
+        {categoryConfig.hasSorting && renderMobileDropdown(
+          'Sort',
+          'sorting',
+          <div className="space-y-1">
+            {categoryConfig.sortingFields
+              .filter(field => expandedSections.sorting ||
+                (category.toLowerCase().includes('creatine') && field === 'creatine_per_serving') ||
+                ['price', 'price_per_serving', 'protein_per_serving'].includes(field))
+              .map((field) => (
+              <button
+                key={field}
+                onClick={() => handleSortChange(field)}
+                className={`w-full text-left px-2 py-1 rounded text-xs transition-colors ${
+                  sortField === field
+                    ? 'bg-emerald-100 text-emerald-800 font-medium'
+                    : 'text-gray-700 hover:bg-gray-50'
+                }`}
+              >
+                {field.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase())}
+                {sortField === field && (
+                  <span className="float-right">
+                    {sortDirection === 'desc' ? '↓' : '↑'}
+                  </span>
+                )}
+              </button>
+            ))}
+          </div>
+        )}
+
+        {/* Verdict Filter */}
+        {categoryConfig.hasVerdict && renderMobileDropdown(
+          'Verdict',
+          'verdict',
+          renderMultiSelectFilter(
+            '',
+            ['pass', 'fail', 'not assigned'],
+            selectedVerdicts,
+            setSelectedVerdicts,
+            'verdict'
+          )
+        )}
+
+        {/* Nutrients Filter */}
+        {categoryConfig.hasNutrients && renderMobileDropdown(
+          'Nutrients',
+          'nutrients',
+          <div className="space-y-4">
+            {categoryConfig.nutrients.map((nutrient) => {
+              const nutrientTitles = {
+                protein: 'Protein Per Serving',
+                carbs: 'Carbs Per Serving',
+                fats: 'Fats Per Serving',
+                creatine: 'Creatine Per Serving'
+              };
+
+              const title = nutrientTitles[nutrient as keyof typeof nutrientTitles];
+              if (!title) return null;
+
+              const rangeStates = {
+                protein: { state: selectedProteinRanges, setter: setSelectedProteinRanges },
+                carbs: { state: selectedCarbsRanges, setter: setSelectedCarbsRanges },
+                fats: { state: selectedFatsRanges, setter: setSelectedFatsRanges },
+                creatine: { state: selectedCreatineRanges, setter: setSelectedCreatineRanges }
+              };
+
+              const state = rangeStates[nutrient as keyof typeof rangeStates];
+              if (!state) return null;
+
+              return (
+                <div key={nutrient} className="border-b border-gray-200 pb-3 last:border-b-0 last:pb-0">
+                  <h5 className="text-xs font-medium text-gray-900 mb-2">{title}</h5>
+                  {renderNutrientRangeFilter(title, state.state, state.setter, nutrient, `${nutrient}_per_serving` as keyof FilterOptions)}
+                </div>
+              );
+            })}
+          </div>
+        )}
+
+        {/* Price Filter */}
+        {(categoryConfig.hasPrice || categoryConfig.hasPricePerServing) && renderMobileDropdown(
+          'Price',
+          'price',
+          <div className="space-y-4">
+            {categoryConfig.hasPrice && renderRangeFilter(
+              'Price (₹)',
+              priceRange,
+              0,
+              10000,
+              setPriceRange,
+              '₹',
+              1,
+              'price'
+            )}
+            {categoryConfig.hasPricePerServing && renderRangeFilter(
+              'Price Per Serving (₹)',
+              pricePerServingRange,
+              0,
+              1000,
+              setPricePerServingRange,
+              '₹',
+              0.1,
+              'price_per_serving'
+            )}
+          </div>
+        )}
+
+        {/* Contaminants Filter */}
+        {categoryConfig.hasContaminants && categoryConfig.contaminants.length > 0 && renderMobileDropdown(
+          'Contaminants',
+          'contaminants',
+          <div className="space-y-3">
+            {categoryConfig.contaminants.map((contaminant) => {
+              const contaminantStates = {
+                aflatoxins: { state: aflatoxins, setter: setAflatoxins },
+                pesticides: { state: pesticides, setter: setPesticides },
+                amino_spiking: { state: aminoSpiking, setter: setAminoSpiking },
+                heavy_metals: { state: heavyMetals, setter: setHeavyMetals },
+                melamine_spiking: { state: melamineSpiking, setter: setMelamineSpiking }
+              };
+
+              const state = contaminantStates[contaminant as keyof typeof contaminantStates];
+              if (!state) return null;
+
+              return (
+                <div key={contaminant}>
+                  <h5 className="text-xs font-medium text-gray-700 mb-2 capitalize">
+                    {contaminant.replace('_', ' ')}
+                  </h5>
+                  {renderMultiSelectFilter(
+                    '',
+                    ['pass', 'fail'],
+                    state.state,
+                    state.setter,
+                    contaminant as keyof FilterOptions
+                  )}
+                </div>
+              );
+            })}
+          </div>
+        )}
+
+        {/* Subjective Analysis Filter */}
+        {categoryConfig.hasSubjective && renderMobileDropdown(
+          'Subjective',
+          'subjective',
+          <div className="space-y-3">
+            {[
+              { key: 'taste', state: taste, setter: setTaste },
+              { key: 'mixability', state: mixability, setter: setMixability },
+              { key: 'packaging', state: packaging, setter: setPackaging },
+              { key: 'serving_size_accuracy', state: servingSizeAccuracy, setter: setServingSizeAccuracy }
+            ].map(({ key, state, setter }) => (
+              <div key={key}>
+                <h5 className="text-xs font-medium text-gray-700 mb-2 capitalize">
+                  {key.replace('_', ' ')}
+                </h5>
+                {renderMultiSelectFilter(
+                  '',
+                  ['pass', 'fail', 'neutral'],
+                  state,
+                  setter,
+                  key as keyof FilterOptions
+                )}
+              </div>
+            ))}
+          </div>
+        )}
+
+        {/* Food Tests Filter */}
+        {categoryConfig.hasFoodFilters && renderMobileDropdown(
+          'Tests',
+          'food',
+          <div className="space-y-4">
+            {renderMultiSelectFilter(
+              'Basic Tests',
+              ['pass', 'fail'],
+              basicTestsVerdict,
+              setBasicTestsVerdict,
+              'basic_tests_verdict'
+            )}
+            {renderMultiSelectFilter(
+              'Contaminant Tests',
+              ['pass', 'fail'],
+              contaminantTestsVerdict,
+              setContaminantTestsVerdict,
+              'contaminant_tests_verdict'
+            )}
+            {renderMultiSelectFilter(
+              'Review',
+              ['pass', 'fail'],
+              reviewVerdict,
+              setReviewVerdict,
+              'review_verdict'
+            )}
+          </div>
+        )}
+      </div>
+
+      {/* Active Filters Count */}
+      {countActiveFilters() > 0 && (
+        <div className="mt-2 px-2 py-1 bg-emerald-50 rounded text-xs text-emerald-800 font-medium text-center">
+          {countActiveFilters()} active
+        </div>
+      )}
+    </div>
+    </>
   );
 }
 

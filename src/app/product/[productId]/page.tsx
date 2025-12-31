@@ -1,9 +1,10 @@
 import Image from 'next/image';
+import Link from 'next/link';
 import { notFound } from 'next/navigation';
 import Navbar from '@/components/Navbar';
 import TestSection from '@/components/TestSection';
 import { supabase } from '@/lib/supabase';
-import { Report } from '@/types';
+import { Report, getBasicTestsVerdict, getContaminantTestsVerdict, getReviewVerdict } from '@/types';
 
 async function getProduct(productId: string): Promise<Report | null> {
   console.log('🔍 Fetching product with ID:', productId);
@@ -33,7 +34,7 @@ async function getProduct(productId: string): Promise<Report | null> {
     console.log('- Also filtering by image_status: completed');
 
     // First, let's try to find the product without the image_status filter to see if it exists
-    const { data: checkData, error: checkError } = await supabase
+    const { data: checkData } = await supabase
       .from('reports')
       .select('product_id, image_status, verdict')
       .eq('product_id', productId);
@@ -76,20 +77,21 @@ async function getProduct(productId: string): Promise<Report | null> {
       return null;
     }
 
-    console.log('✅ Successfully fetched product:', (data as any).product_name);
-    console.log('- Product ID:', (data as any).product_id);
-    console.log('- Image Status:', (data as any).image_status);
-    console.log('- Results column exists:', !!(data as any).results);
-    console.log('- Results has basic_tests:', !!((data as any).results?.basic_tests));
-    console.log('- Results has contaminant_tests:', !!((data as any).results?.contaminant_tests));
-    console.log('- Results has review:', !!((data as any).results?.review));
+    const product = data as Report;
+    console.log('✅ Successfully fetched product:', product.product_name);
+    console.log('- Product ID:', product.product_id);
+    console.log('- Image Status:', product.image_status);
+    console.log('- Results column exists:', !!product.results);
+    console.log('- Results has basic_tests:', !!product.results?.basic_tests);
+    console.log('- Results has contaminant_tests:', !!product.results?.contaminant_tests);
+    console.log('- Results has review:', !!product.results?.review);
 
     // Validate that we have the essential data
-    if (!(data as any).results) {
+    if (!product.results) {
       console.warn('⚠️ Warning: Product has no results data in the results column');
     }
 
-    return data;
+    return product;
 
   } catch (error) {
     console.error('💥 Unexpected error during Supabase query:');
@@ -130,11 +132,11 @@ export default async function ProductPage({
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         {/* Breadcrumb */}
         <nav className="flex items-center space-x-2 text-sm text-gray-600 mb-6">
-          <a href="/" className="hover:text-emerald-600">Home</a>
+          <Link href="/" className="hover:text-emerald-600">Home</Link>
           <span>/</span>
-          <a href={`/category/${product.product_category.toLowerCase().replace(/\s+/g, '-')}`} className="hover:text-emerald-600 capitalize">
+          <Link href={`/category/${product.product_category.toLowerCase().replace(/\s+/g, '-')}`} className="hover:text-emerald-600 capitalize">
             {product.product_category}
-          </a>
+          </Link>
           <span>/</span>
           <span className="text-gray-900">{product.product_name}</span>
         </nav>
@@ -221,7 +223,7 @@ export default async function ProductPage({
           {product.results?.basic_tests && (
             <TestSection
               title="Basic Tests"
-              verdict={(product.results.basic_tests as any).verdict || 'pass'}
+              verdict={getBasicTestsVerdict(product) || 'pass'}
               tests={product.results.basic_tests}
             />
           )}
@@ -230,7 +232,7 @@ export default async function ProductPage({
           {product.results?.contaminant_tests && (
             <TestSection
               title="Contaminant Tests"
-              verdict={(product.results.contaminant_tests as any).verdict || 'pass'}
+              verdict={getContaminantTestsVerdict(product) || 'pass'}
               tests={product.results.contaminant_tests}
             />
           )}
@@ -239,7 +241,7 @@ export default async function ProductPage({
           {product.results?.review && (
             <TestSection
               title="Subjective Analysis"
-              verdict={(product.results.review as any).verdict || 'pass'}
+              verdict={getReviewVerdict(product) || 'pass'}
               tests={product.results.review}
             />
           )}

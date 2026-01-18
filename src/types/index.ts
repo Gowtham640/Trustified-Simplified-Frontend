@@ -172,7 +172,8 @@ export const getPricePerServing = (product: Report): number | null => {
   const productInfo = product.results?.product_info;
   if (!productInfo?.price_per_serving) return null;
 
-  const priceStr = productInfo.price_per_serving.replace(/[^\d.]/g, '');
+  // Convert to string first to handle cases where it's a number
+  const priceStr = String(productInfo.price_per_serving).replace(/[^\d.]/g, '');
   return parseFloat(priceStr) || null;
 };
 

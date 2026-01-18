@@ -202,8 +202,9 @@ export default function CategoryPage() {
             bValue = b.price;
             break;
           case 'price_per_serving':
-            aValue = getPricePerServing(a);
-            bValue = getPricePerServing(b);
+            // Try the JSON data first (like the product page does), then fallback to database field
+            aValue = getPricePerServing(a) || (a.price_per_serving != null && a.price_per_serving > 0 ? a.price_per_serving : null);
+            bValue = getPricePerServing(b) || (b.price_per_serving != null && b.price_per_serving > 0 ? b.price_per_serving : null);
             break;
           case 'protein_per_serving':
             aValue = getNutrientValue(a, 'protein');

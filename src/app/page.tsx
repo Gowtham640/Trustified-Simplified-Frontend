@@ -3,6 +3,7 @@ import Slideshow from '@/components/Slideshow';
 import CategoryScroll from '@/components/CategoryScroll';
 import { supabase } from '@/lib/supabase';
 import { Report } from '@/types';
+import ShinyText from '@/components/ShinyText';
 
 async function getProductsByCategory() {
   try {
@@ -78,13 +79,13 @@ export default async function Home() {
 
       <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
         {Object.entries(productsByCategory).map(([category, products]) => (
-          <CategoryScroll 
-            key={category} 
-            title={category} 
-            products={products} 
+          <CategoryScroll
+            key={category}
+            title={category}
+            products={products}
           />
         ))}
-        
+
         {Object.keys(productsByCategory).length === 0 && (
           <div className="text-center py-20">
             <svg className="mx-auto h-24 w-24 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">

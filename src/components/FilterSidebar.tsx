@@ -60,6 +60,10 @@ export default function FilterSidebar({
   // Sorting state
   const [sortField, setSortField] = useState<string>('');
   const [sortDirection, setSortDirection] = useState<'asc' | 'desc'>('desc');
+  const [touchStartY, setTouchStartY] = useState<number | null>(null);
+  const [touchCurrentY, setTouchCurrentY] = useState<number | null>(null);
+
+  const DRAG_THRESHOLD = 60; // px
 
   const clearFilters = () => {
     setSelectedVerdicts([]);
@@ -110,6 +114,33 @@ export default function FilterSidebar({
         [section]: !prev[section]
       }));
     }
+  };
+
+  const handleTouchStart = (e: React.TouchEvent) => {
+    setTouchStartY(e.touches[0].clientY);
+  };
+
+  const handleTouchMove = (e: React.TouchEvent) => {
+    setTouchCurrentY(e.touches[0].clientY);
+  };
+
+  const handleTouchEnd = () => {
+    if (touchStartY === null || touchCurrentY === null) return;
+
+    const delta = touchStartY - touchCurrentY;
+
+    // Drag up → open
+    if (delta > DRAG_THRESHOLD && !isSheetOpen) {
+      setIsSheetOpen(true);
+    }
+
+    // Drag down → close
+    if (delta < -DRAG_THRESHOLD && isSheetOpen) {
+      setIsSheetOpen(false);
+    }
+
+    setTouchStartY(null);
+    setTouchCurrentY(null);
   };
 
   const applyFilters = (newFilters: Partial<FilterOptions> = {}, newSort?: SortOptions) => {
@@ -171,12 +202,53 @@ export default function FilterSidebar({
   };
 
   const handleSortChange = (field: string) => {
-    const typedField = field as SortOptions['field'];
-    const newDirection = sortField === field && sortDirection === 'desc' ? 'asc' : 'desc';
+    // Deactivate sorting
+    if (sortField === field) {
+      setSortField('');
+      setSortDirection('desc');
+
+      // IMPORTANT: explicitly clear sorting
+      onFilterChange(
+        {
+          verdict: selectedVerdicts.length > 0 ? selectedVerdicts : undefined,
+          protein_per_serving: selectedProteinRanges.length > 0 ? selectedProteinRanges : undefined,
+          carbs_per_serving: selectedCarbsRanges.length > 0 ? selectedCarbsRanges : undefined,
+          fats_per_serving: selectedFatsRanges.length > 0 ? selectedFatsRanges : undefined,
+          creatine_per_serving: selectedCreatineRanges.length > 0 ? selectedCreatineRanges : undefined,
+          price: priceRange[0] !== 0 || priceRange[1] !== 10000 ? priceRange : undefined,
+          price_per_serving:
+            pricePerServingRange[0] !== 0 || pricePerServingRange[1] !== 1000
+              ? pricePerServingRange
+              : undefined,
+          aflatoxins: aflatoxins.length > 0 ? aflatoxins : undefined,
+          pesticides: pesticides.length > 0 ? pesticides : undefined,
+          amino_spiking: aminoSpiking.length > 0 ? aminoSpiking : undefined,
+          heavy_metals: heavyMetals.length > 0 ? heavyMetals : undefined,
+          melamine_spiking: melamineSpiking.length > 0 ? melamineSpiking : undefined,
+          taste: taste.length > 0 ? taste : undefined,
+          mixability: mixability.length > 0 ? mixability : undefined,
+          packaging: packaging.length > 0 ? packaging : undefined,
+          serving_size_accuracy:
+            servingSizeAccuracy.length > 0 ? servingSizeAccuracy : undefined,
+          basic_tests_verdict:
+            basicTestsVerdict.length > 0 ? basicTestsVerdict : undefined,
+          contaminant_tests_verdict:
+            contaminantTestsVerdict.length > 0 ? contaminantTestsVerdict : undefined,
+          review_verdict: reviewVerdict.length > 0 ? reviewVerdict : undefined
+        },
+        undefined // ← this is the key
+      );
+
+      return;
+    }
+
+    // Activate sorting (always DESC)
     setSortField(field);
-    setSortDirection(newDirection);
-    applyFilters({}, { field: typedField, direction: newDirection });
+    setSortDirection('desc');
+
+    applyFilters({}, { field: field as SortOptions['field'], direction: 'desc' });
   };
+
 
 
   const toggleSheet = () => {
@@ -733,16 +805,19 @@ export default function FilterSidebar({
             <div className="relative h-full">
               <div className="absolute inset-0 rounded-t-[32px] border border-white/10 bg-neutral-900" />
               <div className="relative flex h-full flex-col">
-                <button
-                  type="button"
-                  onClick={toggleSheet}
-                  className="flex flex-col items-center gap-2 px-6 pt-3 pb-2 text-center focus:outline-none"
+                <div
+                  className="flex flex-col items-center gap-2 px-6 pt-3 pb-2 text-center select-none"
+                  onTouchStart={handleTouchStart}
+                  onTouchMove={handleTouchMove}
+                  onTouchEnd={handleTouchEnd}
+                  onClick={toggleSheet} // fallback tap
                 >
                   <span className="block h-1.5 w-12 rounded-full bg-white/30" />
                   <span className="text-[0.65rem] font-semibold uppercase tracking-[0.5em] text-gray-300">
                     Sorting & Filters
                   </span>
-                </button>
+                </div>
+
 
                 <div
                   className={`flex flex-1 flex-col gap-4 px-5 pb-6 transition-all duration-300 ${isSheetOpen
